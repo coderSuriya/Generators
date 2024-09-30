@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Barcode Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 32px;
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input, .form-group select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .alert {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px solid #f00;
+            border-radius: 4px;
+            background-color: #fee;
+            color: #d00;
+        }
+        .alert-title {
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Bulk Barcode Generator</div>
+        <div class="form-group">
+            <label for="rows">Rows</label>
+            <input type="number" id="rows" value="3">
+        </div>
+        <div class="form-group">
+            <label for="columns">Columns</label>
+            <input type="number" id="columns" value="4">
+        </div>
+        <div class="form-group">
+            <label for="margin">Margin (px)</label>
+            <input type="number" id="margin" value="10">
+        </div>
+        <div class="form-group">
+            <label for="paperSize">Paper Size</label>
+            <select id="paperSize">
+                <option value="A4">A4 (210 x 297 mm)</option>
+                <option value="Letter">Letter (216 x 279 mm)</option>
+                <option value="Legal">Legal (216 x 356 mm)</option>
+                <option value="Custom">Custom</option>
+            </select>
+        </div>
+        <div class="form-group custom-size" style="display:none;">
+            <label for="customWidth">Custom Width (mm)</label>
+            <input type="number" id="customWidth" placeholder="Width in mm">
+            <label for="customHeight">Custom Height (mm)</label>
+            <input type="number" id="customHeight" placeholder="Height in mm">
+        </div>
+        <div class="form-group">
+            <label for="csvFile">CSV File</label>
+            <input type="file" id="csvFile" accept=".csv">
+        </div>
+        <button onclick="generateBarcodes()">Generate Barcodes</button>
+        <div class="alert">
+            <div class="alert-title">Note</div>
+            <div class="alert-description">
+                These are real EAN-13 barcodes generated using JsBarcode. For production use, ensure you have the necessary permissions and that the barcodes meet your specific requirements.
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('paperSize').addEventListener('change', function() {
+            const customSizeDiv = document.querySelector('.custom-size');
+            if (this.value === 'Custom') {
+                customSizeDiv.style.display = 'block';
+            } else {
+                customSizeDiv.style.display = 'none';
+            }
+        });
+
+        function generateBarcodes() {
+            const rows = document.getElementById('rows').value;
+            const columns = document.getElementById('columns').value;
+            const margin = document.getElementById('margin').value;
+            const csvFile = document.getElementById('csvFile').files[0];
+            const paperSize = document.getElementById('paperSize').value;
+
+            let paperWidth, paperHeight;
+            if (paperSize === 'A4') {
+                paperWidth = 210;
+                paperHeight = 297;
+            } else if (paperSize === 'Letter') {
+                paperWidth = 216;
+                paperHeight = 279;
+            } else if (paperSize === 'Legal') {
+                paperWidth = 216;
+                paperHeight = 356;
+            } else {
+                paperWidth = document.getElementById('customWidth').value;
+                paperHeight = document.getElementById('customHeight').value;
+                if (!paperWidth || !paperHeight) {
+                    alert('Please specify custom paper dimensions.');
+                    return;
+                }
+            }
+
+            if (!csvFile) {
+                alert('Please upload a CSV file.');
+                return;
+            }
+
+            Papa.parse(csvFile, {
+                header: false,
+                complete: function(results) {
+                    const data = results.data;
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write('<html><head><title>Generated Barcodes</title></head><body style="margin: 0;">');
+                    newWindow.document.write('<div class="barcode-grid" style="display: grid; grid-template-columns: repeat(' + columns + ', 1fr); gap: ' + margin + 'px; width:' + paperWidth + 'mm; height:' + paperHeight + 'mm; margin: auto; border: 1px solid #000;">');
+
+                    let barcodeIndex = 0;
+
+                    data.forEach(([ean13, productInfo, repeat]) => {
+                        for (let i = 0; i < parseInt(repeat, 10); i++) {
+                            const barcodeId = 'barcode-' + barcodeIndex;
+                            const barcodeItem = `<div class="barcode-item" style="border: 1px solid #ddd; padding: 8px; border-radius: 4px; text-align: center; overflow: hidden; margin: ${margin}px;">
+                                                    <svg id="${barcodeId}" style="width:100%; height:auto;"></svg>
+                                                    <p style="font-size: 12px; margin-top: 8px; text-align: left;">${productInfo}</p>
+                                                 </div>`;
+                            newWindow.document.write(barcodeItem);
+                            barcodeIndex++;
+                        }
+                    });
+
+                    newWindow.document.write('</div></body></html>');
+                    newWindow.document.close();
+
+                    newWindow.onload = function() {
+                        barcodeIndex = 0;
+                        data.forEach(([ean13, productInfo, repeat]) => {
+                            for (let i = 0; i < parseInt(repeat, 10); i++) {
+                                const svgId = 'barcode-' + barcodeIndex;
+                                const svgElement = newWindow.document.getElementById(svgId);
+                                if (svgElement) {
+                                    JsBarcode(svgElement, ean13, { width: 1, height: 40, fontSize: 10 });
+                                }
+                                barcodeIndex++;
+                            }
+                        });
+                    };
+                }
+            });
+        }
+    </script>
+</body>
+</html>
