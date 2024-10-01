@@ -208,7 +208,7 @@
                 </head>
                 <body>
                     <div class="labels-container" id="labels-container">
-                        ${products.map(product => product.name ? createLabel(product, labelDimensions) : '').join('')}
+                        ${products.map(product => product.name ? createLabel(product) : '').join('')}
                     </div>
                 </body>
                 </html>
@@ -216,7 +216,7 @@
             newTab.document.close();
         }
 
-        function createLabel(product, dimensions) {
+        function createLabel(product) {
             return `
                 <div class="label">
                     <div class="header">
