@@ -168,8 +168,8 @@
                         for (let i = 0; i < parseInt(repeat, 10); i++) {
                             const barcodeId = 'barcode-' + barcodeIndex;
                             const barcodeItem = `<div class="barcode-item" style="border: 1px solid #ddd; padding: 8px; border-radius: 4px; text-align: center; overflow: hidden; margin: ${margin}px;">
+                                                    <p style="font-size: 12px; margin-bottom: 8px; text-align: left;">${productInfo}</p>
                                                     <svg id="${barcodeId}" style="width:100%; height:auto;"></svg>
-                                                    <p style="font-size: 12px; margin-top: 8px; text-align: left;">${productInfo}</p>
                                                  </div>`;
                             newWindow.document.write(barcodeItem);
                             barcodeIndex++;
