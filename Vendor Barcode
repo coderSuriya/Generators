@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Barcode Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 32px;
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input, .form-group select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .alert {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px solid #f00;
+            border-radius: 4px;
+            background-color: #fee;
+            color: #d00;
+        }
+        .alert-title {
+            font-weight: bold;
+        }
+        .barcode-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .barcode-title {
+            font-size: 10px;
+            margin-bottom: 5px;
+            text-align: center;
+            width: 100%;
+        }
+        .barcode-asin {
+            font-size: 10px;
+            margin-top: 5px;
+            text-align: center;
+        }
+        .barcode-details {
+            width: 100%;
+            text-align: left;
+            margin-top: 10px;
+        }
+        .barcode-mrp {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .mrp-line {
+            border-top: 1px solid black;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .manufacturer-heading, .customer-care-heading {
+            text-align: center;
+            font-weight: bold;
+            font-size: 10px;
+            margin-top: 10px;
+        }
+        .manufacturer-details, .customer-care-details {
+            text-align: left;
+            font-size: 8px;
+            margin-top: 3px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Bulk Barcode Generator</div>
+        <div class="form-group">
+            <label for="rows">Rows</label>
+            <input type="number" id="rows" value="3">
+        </div>
+        <div class="form-group">
+            <label for="columns">Columns</label>
+            <input type="number" id="columns" value="4">
+        </div>
+        <div class="form-group">
+            <label for="margin">Margin (px)</label>
+            <input type="number" id="margin" value="10">
+        </div>
+        <div class="form-group">
+            <label for="paperSize">Paper Size</label>
+            <select id="paperSize">
+                <option value="A4">A4 (210 x 297 mm)</option>
+                <option value="Letter">Letter (216 x 279 mm)</option>
+                <option value="Legal">Legal (216 x 356 mm)</option>
+                <option value="Custom">Custom</option>
+            </select>
+        </div>
+        <div class="form-group custom-size" style="display:none;">
+            <label for="customWidth">Custom Width (mm)</label>
+            <input type="number" id="customWidth" placeholder="Width in mm">
+            <label for="customHeight">Custom Height (mm)</label>
+            <input type="number" id="customHeight" placeholder="Height in mm">
+        </div>
+        <div class="form-group">
+            <label for="csvFile">CSV File</label>
+            <input type="file" id="csvFile" accept=".csv">
+        </div>
+        <button onclick="generateBarcodes()">Generate Barcodes</button>
+        <div class="alert">
+            <div class="alert-title">Note</div>
+            <div class="alert-description">
+                These are real barcodes generated using JsBarcode. For production use, ensure you have the necessary permissions.
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('paperSize').addEventListener('change', function() {
+            const customSizeDiv = document.querySelector('.custom-size');
+            if (this.value === 'Custom') {
+                customSizeDiv.style.display = 'block';
+            } else {
+                customSizeDiv.style.display = 'none';
+            }
+        });
+
+        function generateBarcodes() {
+            const rows = document.getElementById('rows').value;
+            const columns = document.getElementById('columns').value;
+            const margin = document.getElementById('margin').value;
+            const csvFile = document.getElementById('csvFile').files[0];
+            const paperSize = document.getElementById('paperSize').value;
+            let paperWidth, paperHeight;
+
+            if (paperSize === 'A4') {
+                paperWidth = 210;
+                paperHeight = 297;
+            } else if (paperSize === 'Letter') {
+                paperWidth = 216;
+                paperHeight = 279;
+            } else if (paperSize === 'Legal') {
+                paperWidth = 216;
+                paperHeight = 356;
+            } else {
+                paperWidth = document.getElementById('customWidth').value;
+                paperHeight = document.getElementById('customHeight').value;
+                if (!paperWidth || !paperHeight) {
+                    alert('Please specify custom paper dimensions.');
+                    return;
+                }
+            }
+
+            if (!csvFile) {
+                alert('Please upload a CSV file.');
+                return;
+            }
+
+            Papa.parse(csvFile, {
+                header: true,
+                complete: function(results) {
+                    const data = results.data;
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write('<html><head><title>Generated Barcodes</title><style>');
+                    newWindow.document.write(`
+                        .barcode-grid {
+                            display: grid; 
+                            grid-template-columns: repeat(${columns}, 1fr); 
+                            gap: ${margin}px; 
+                            width: ${paperWidth}mm; 
+                            height: ${paperHeight}mm; 
+                            margin: auto; 
+                            border: 1px solid #000;
+                            padding: ${margin}px;
+                            box-sizing: border-box;
+                        }
+                        .barcode-item {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            border: 1px solid #ddd;
+                            padding: 15px;
+                            text-align: center;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }
+                        .barcode-title {
+                            font-size: 10px;
+                            margin-bottom: 5px;
+                            text-align: center;
+                            width: 100%;
+                        }
+                        .barcode-asin {
+                            font-size: 10px;
+                            margin-top: 5px;
+                            text-align: center;
+                        }
+                        .barcode-details {
+                            width: 100%;
+                            text-align: left;
+                            margin-top: 10px;
+                        }
+                        .barcode-mrp {
+                            font-size: 12px;
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                        }
+                        .mrp-line {
+                            border-top: 1px solid black;
+                            width: 100%;
+                            margin-bottom: 5px;
+                        }
+                        .manufacturer-heading, .customer-care-heading {
+                            text-align: center;
+                            font-weight: bold;
+                            font-size: 10px;
+                            margin-top: 10px;
+                        }
+                        .manufacturer-details, .customer-care-details {
+                            text-align: left;
+                            font-size: 8px;
+                            margin-top: 3px;
+                        }
+                    `);
+                    newWindow.document.write('</style></head><body style="margin: 0;">');
+                    newWindow.document.write(`<div class="barcode-grid">`);
+
+                    data.forEach((row) => {
+                        const barcodeId = 'barcode-' + Math.random().toString(36).substr(2, 9);
+                        const barcodeItem = `
+                            <div class="barcode-item">
+                                <div class="barcode-title">${row.title}</div>
+                                <svg id="${barcodeId}" style="width:80%; height:auto;"></svg>
+                                <div class="barcode-asin">${row.asin}</div>
+                                <div class="barcode-details">
+                                    <div class="barcode-mrp">MRP:RS. ${row.mrp}</div>
+                                    <div class="mrp-line"></div>
+                                    <div class="manufacturer-heading">Manufactured & Marketed by:</div>
+                                    <div class="manufacturer-details">Kuber Industries G-184-185, Bank Of Baroda Lane Sitapura Jaipur (Rajasthan) 302022</div>
+                                    <div class="customer-care-heading">Customer Care Details:</div>
+                                    <div class="customer-care-details">Mobile: 8505030382 | E-mail: info@kuberindustries.co.in | www.kuberindustries.co.in</div>
+                                </div>
+                            </div>
+                        `;
+                        newWindow.document.write(barcodeItem);
+                    });
+
+                    newWindow.document.write('</div></body></html>');
+                    newWindow.document.close();
+                    
+                    newWindow.onload = function() {
+                        data.forEach((row, index) => {
+                            const svgId = newWindow.document.getElementsByTagName('svg')[index].id;
+                            const svgElement = newWindow.document.getElementById(svgId);
+                            if (svgElement) {
+                                JsBarcode(svgElement, row.asin, { 
+                                    width: 1, 
+                                    height: 40, 
+                                    fontSize: 10,
+                                    textMargin: 0,
+                                    marginTop: 0,
+                                    marginBottom: 0
+                                });
+                            }
+                        });
+                    };
+                }
+            });
+        }
+    </script>
+</body>
+</html>
