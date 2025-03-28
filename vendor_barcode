@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Barcode Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            padding: 32px;
+            max-width: 960px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .customization {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .customization label {
+            font-weight: bold;
+            color: #555;
+            margin-right: 8px;
+        }
+
+        .customization input, .customization select {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .barcode-label {
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #000;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .label-grid {
+            display: grid;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        .barcode {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .asin {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #000;
+        }
+
+        .product-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .price-date-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .mrp {
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+            text-align: left;
+        }
+
+        .manufacturer-date {
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+
+        .line {
+            width: 80%;
+            height: 2px;
+            background-color: black;
+            margin: 10px auto;
+        }
+
+        .manufacturer, .customer-care {
+            text-align: left;
+            margin: 10px 0;
+        }
+
+        .manufacturer h4, .customer-care h4 {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .manufacturer p, .customer-care p {
+            font-size: 12px;
+            margin: 0;
+            color: #555;
+            white-space: pre-line;
+        }
+
+        .customer-care strong {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Bulk Barcode Generator</div>
+        <div class="form-group">
+            <label for="csvFile">Upload CSV File</label>
+            <input type="file" id="csvFile" accept=".csv">
+        </div>
+        <div class="customization">
+            <label for="labelWidth">Label Width (in):</label>
+            <input type="number" id="labelWidth" value="6" min="2" max="10" step="0.1">
+            <label for="labelHeight">Label Height (in):</label>
+            <input type="number" id="labelHeight" value="4" min="2" max="10" step="0.1">
+            <label for="rows">Rows per Page:</label>
+            <input type="number" id="rows" value="2" min="1" max="10" step="1">
+            <label for="columns">Columns per Page:</label>
+            <input type="number" id="columns" value="2" min="1" max="10" step="1">
+            <label for="pageSize">Page Size:</label>
+            <select id="pageSize">
+                <option value="A4">A4</option>
+                <option value="Letter">Letter</option>
+                <option value="Legal">Legal</option>
+            </select>
+        </div>
+        <button onclick="generateBarcodes()">Generate Barcodes</button>
+        <div id="barcodeContainer"></div>
+    </div>
+
+    <script>
+        function generateBarcodes() {
+            const csvFile = document.getElementById('csvFile').files[0];
+            const labelWidth = document.getElementById('labelWidth').value;
+            const labelHeight = document.getElementById('labelHeight').value;
+            const rows = parseInt(document.getElementById('rows').value);
+            const columns = parseInt(document.getElementById('columns').value);
+            const pageSize = document.getElementById('pageSize').value;
+
+            if (!csvFile) {
+                alert("Please upload a CSV file.");
+                return;
+            }
+
+            const pageSizes = {
+                'A4': { width: '793', height: '1122' },
+                'Letter': { width: '816', height: '1056' },
+                'Legal': { width: '816', height: '1344' }
+            };
+            const selectedSize = pageSizes[pageSize];
+            const labelsPerPage = rows * columns;
+
+            Papa.parse(csvFile, {
+                header: false,
+                complete: function(results) {
+                    const data = results.data.slice(1);
+                    let labelsHTML = `
+                        <html>
+                        <head>
+                            <style>
+                                body { 
+                                    margin: 0; 
+                                    padding: 20px; 
+                                    width: ${selectedSize.width}px;
+                                    height: ${selectedSize.height}px;
+                                }
+                                .label-grid {
+                                    display: grid;
+                                    grid-template-columns: repeat(${columns}, ${labelWidth}in);
+                                    grid-template-rows: repeat(${rows}, ${labelHeight}in);
+                                    gap: 10px;
+                                    justify-content: center;
+                                    margin: 0 auto;
+                                    width: ${labelWidth * columns + (columns - 1) * 0.1}in;
+                                }
+                                .barcode-label {
+                                    background: #fff;
+                                    padding: 20px;
+                                    border: 1px solid #000;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                    width: ${labelWidth}in;
+                                    height: ${labelHeight}in;
+                                    text-align: center;
+                                    box-sizing: border-box;
+                                    overflow: hidden;
+                                }
+                                .barcode {
+                                    display: block;
+                                    margin: 0 auto;
+                                }
+                                .asin {
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    margin: 5px 0;
+                                    color: #000;
+                                }
+                                .product-title {
+                                    font-size: 16px;
+                                    font-weight: bold;
+                                    margin: 10px 0;
+                                    color: #333;
+                                }
+                                .price-date-container {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    margin: 5px 0;
+                                }
+                                .mrp {
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    color: #000;
+                                    text-align: left;
+                                }
+                                .manufacturer-date {
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    color: #000;
+                                    text-align: right;
+                                }
+                                .line {
+                                    width: 80%;
+                                    height: 2px;
+                                    background-color: black;
+                                    margin: 10px auto;
+                                }
+                                .manufacturer, .customer-care {
+                                    text-align: left;
+                                    margin: 10px 0;
+                                }
+                                .manufacturer h4, .customer-care h4 {
+                                    text-align: center;
+                                    font-size: 14px;
+                                    font-weight: bold;
+                                    margin: 5px 0;
+                                    color: #333;
+                                }
+                                .manufacturer p, .customer-care p {
+                                    font-size: 12px;
+                                    margin: 0;
+                                    color: #555;
+                                    white-space: pre-line;
+                                }
+                                .customer-care strong {
+                                    font-weight: bold;
+                                    color: #333;
+                                }
+                                .page-break {
+                                    page-break-before: always;
+                                }
+                            </style>
+                        </head>
+                        <body>`;
+
+                    let barcodeScripts = [];
+                    let labelIndex = 0;
+
+                    data.forEach(([asin, title, mrp, manufacturer, customerCare, manufacturerDate], index) => {
+                        if (!asin) return;
+
+                        if (index % labelsPerPage === 0) {
+                            if (index > 0) {
+                                labelsHTML += '</div><div class="page-break"></div>';
+                            }
+                            labelsHTML += '<div class="label-grid">';
+                        }
+
+                        let formattedCustomerCare = customerCare
+                            .replace(/Address:/g, '<strong>Address:</strong>')
+                            .replace(/Phone:/g, '<strong>Phone:</strong>')
+                            .replace(/Email:/g, '<strong>Email:</strong>');
+
+                        labelsHTML += `
+                            <div class="barcode-label">
+                                <svg id="barcode-${labelIndex}" class="barcode"></svg>
+                                <p class="asin">${asin}</p>
+                                <h3 class="product-title">${title}</h3>
+                                <div class="price-date-container">
+                                    <p class="mrp">MRP: ₹${mrp}</p>
+                                    <p class="manufacturer-date">MFG Month & Year: ${manufacturerDate || 'N/A'}</p>
+                                </div>
+                                <div class="line"></div>
+                                <div class="manufacturer">
+                                    <h4>Manufacturer:</h4>
+                                    <p>${manufacturer}</p>
+                                </div>
+                                <div class="customer-care">
+                                    <h4>Customer Care Details:</h4>
+                                    <p>${formattedCustomerCare}</p>
+                                </div>
+                            </div>`;
+
+                        barcodeScripts.push(`JsBarcode("#barcode-${labelIndex}", "${asin}", { format: "CODE128", displayValue: false, height: 50, width: 2 });`);
+                        labelIndex++;
+
+                        if (index === data.length - 1) {
+                            labelsHTML += '</div>';
+                        }
+                    });
+
+                    labelsHTML += `
+                        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"><\/script>
+                        <script>
+                            ${barcodeScripts.join('\n')}
+                        <\/script>
+                        </body>
+                        </html>`;
+
+                    const newWindow = window.open('');
+                    newWindow.document.write(labelsHTML);
+                    newWindow.document.close();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
